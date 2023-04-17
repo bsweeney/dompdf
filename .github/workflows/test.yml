@@ -49,6 +49,11 @@ jobs:
 
       - name: Run unit tests
         run: vendor/bin/phpunit
+        
+      - name: my-artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: /home/runner/work/dompdf/dompdf/tmp/failed-output-tests
 
       - name: Run code sniffer
         run: vendor/bin/phpcs --standard=phpcs.xml src tests lib
