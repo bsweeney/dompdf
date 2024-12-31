@@ -841,13 +841,12 @@ abstract class AbstractFrameDecorator extends Frame
      * @param string $id
      * @param string $type
      *
-     * @return bool|string
+     * @return string
      *
      * TODO: What version is the best : this one or the one in ListBullet ?
      */
-    public function counter_value(string $id = self::DEFAULT_COUNTER, string $type = "decimal")
+    public function counter_value(string $id = self::DEFAULT_COUNTER, string $type = "decimal"): string
     {
-        $type = mb_strtolower($type);
         $value = $this->_counters[$id] ?? 0;
 
         switch ($type) {
@@ -862,7 +861,7 @@ abstract class AbstractFrameDecorator extends Frame
                 return Helpers::dec2roman($value);
 
             case "upper-roman":
-                return mb_strtoupper(Helpers::dec2roman($value));
+                return strtoupper(Helpers::dec2roman($value));
 
             case "lower-latin":
             case "lower-alpha":
@@ -898,7 +897,7 @@ abstract class AbstractFrameDecorator extends Frame
     /**
      * @param Block|null $block
      */
-    final function reflow(Block $block = null)
+    final function reflow(?Block $block = null)
     {
         // Uncomment this to see the frames before they're laid out, instead of
         // during rendering.

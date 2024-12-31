@@ -6,6 +6,24 @@ use Dompdf\Tests\TestCase;
 
 class HelpersTest extends TestCase
 {
+    public static function uriEncodingProvider(): array
+    {
+        return [
+            ["https://example.com/test.html", "https://example.com/test.html"],
+            ["https://example.com?a[]=1&b%5B%5D=1&c=d+e&f=g h&i=j%2Bk%26l", "https://example.com?a%5B%5D=1&b%5B%5D=1&c=d+e&f=g%20h&i=j%2Bk%26l"],
+        ];
+    }
+
+    /**
+     * @dataProvider uriEncodingProvider
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('uriEncodingProvider')]
+    public function testUriEncoding(string $uri, string $expected): void
+    {
+        $encodedUri = Helpers::encodeURI($uri);
+        $this->assertEquals($expected, $encodedUri);
+    }
+
     public function testParseDataUriBase64Image(): void
     {
         $imageParts = [
@@ -21,7 +39,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
         );
     }
 
-    public function dec2RomanProvider(): array
+    public static function dec2RomanProvider(): array
     {
         return [
             [-5, "-5"],
@@ -37,13 +55,14 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
     /**
      * @dataProvider dec2RomanProvider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('dec2RomanProvider')]
     public function testDec2Roman($number, string $expected): void
     {
         $roman = Helpers::dec2roman($number);
         $this->assertSame($expected, $roman);
     }
 
-    public function lengthEqualProvider(): array
+    public static function lengthEqualProvider(): array
     {
         // Adapted from
         // https://floating-point-gui.de/errors/NearlyEqualsTest.java
@@ -94,6 +113,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
     /**
      * @dataProvider lengthEqualProvider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('lengthEqualProvider')]
     public function testLengthEqual(float $a, float $b, bool $expected): void
     {
         $this->assertSame($expected, Helpers::lengthEqual($a, $b));
@@ -102,7 +122,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
         $this->assertSame($expected, Helpers::lengthEqual(-$b, -$a));
     }
 
-    
+
     public function testCustomProtocolParsing(): void
     {
         $uri = "mock://path/to/resource";

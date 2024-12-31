@@ -6,7 +6,7 @@ use Dompdf\Tests\TestCase;
 
 class ColorTest extends TestCase
 {
-    public function validColorProvider(): array
+    public static function validColorProvider(): array
     {
         return [
             // Color names
@@ -42,6 +42,7 @@ class ColorTest extends TestCase
     /**
      * @dataProvider validColorProvider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('validColorProvider')]
     public function testParseColor(string $value, array $expected): void
     {
         $color = Color::parse($value);

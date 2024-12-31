@@ -37,7 +37,7 @@ class SelectorTest extends TestCase
         return preg_replace($patterns, $replacements, $selector);
     }
 
-    public function selectorMatchesProvider(): array
+    public static function selectorMatchesProvider(): array
     {
         // Elements expected to matched by each selector are marked with the
         // attribute `data-match`. The optional third parameter defines whether
@@ -748,6 +748,7 @@ class SelectorTest extends TestCase
     /**
      * @dataProvider selectorMatchesProvider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('selectorMatchesProvider')]
     public function testSelectorMatches(
         string $selector,
         string $body,
@@ -788,7 +789,7 @@ class SelectorTest extends TestCase
         }
     }
 
-    public function selectorInvalidProvider(): array
+    public static function selectorInvalidProvider(): array
     {
         return [
             // Valid but unsupported selector syntax
@@ -806,6 +807,7 @@ class SelectorTest extends TestCase
     /**
      * @dataProvider selectorInvalidProvider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('selectorInvalidProvider')]
     public function testSelectorInvalid(string $selector): void
     {
         $sheet = $this->stylesheet();

@@ -10,7 +10,7 @@ use Dompdf\Tests\TestCase;
 
 class PageTest extends TestCase
 {
-    public function pageBreakProvider(): array
+    public static function pageBreakProvider(): array
     {
         return [
             // TODO: Heredocs can be nicely indented starting with PHP 7.3
@@ -82,6 +82,7 @@ HTML
     /**
      * @dataProvider pageBreakProvider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('pageBreakProvider')]
     public function testPageBreak(
         string $html,
         int $pageCount,

@@ -3323,7 +3323,7 @@ EOT;
 
         $cache_name = "$metrics_name.json";
         $this->addMessage("metrics: $metrics_name, cache: $cache_name");
-        
+
         if (file_exists($fontcache . '/' . $cache_name)) {
             $this->addMessage("openFont: json metrics file exists $fontcache/$cache_name");
             $cached_font_info = json_decode(file_get_contents($fontcache . '/' . $cache_name), true);
@@ -3531,13 +3531,13 @@ EOT;
      */
     function selectFont($fontName, $encoding = '', $set = true, $isSubsetting = true)
     {
-        if ($fontName === null || $fontName === '') {
-            return $this->currentFontNum;
-        }
-
+        $fontName = (string) $fontName;
         $ext = substr($fontName, -4);
         if ($ext === '.afm' || $ext === '.ufm') {
             $fontName = substr($fontName, 0, mb_strlen($fontName) - 4);
+        }
+        if ($fontName === '') {
+            return $this->currentFontNum;
         }
 
         if (!isset($this->fonts[$fontName])) {
@@ -3693,6 +3693,8 @@ EOT;
     }
 
     /**
+     * sets the color for fill operations
+     *
      * @param string $fillRule
      */
     function setFillRule($fillRule)
@@ -5012,7 +5014,7 @@ EOT;
         }
 
         if (!isset($this->stringSubsets[$font])) {
-            $base_subset = "\u{fffd}\u{fffe}\u{ffff}";
+            $base_subset = "\u{fffd}\u{fffe}\u{ffff}"; // fffd => replacement character, fffe/ffff => not a character
             $this->stringSubsets[$font] = $this->utf8toCodePointsArray($base_subset);
         }
 
@@ -5164,7 +5166,8 @@ EOT;
             $this->selectFont($this->defaultFont);
         }
 
-        $text = str_replace(["\r", "\n"], "", $text);
+        // remove non-printable characters since they have no width
+        $text = preg_replace('/[\x00-\x1F\x7F]/u', '', $text);
 
         // hmm, this is where it all starts to get tricky - use the font information to
         // calculate the width of each character, add them up and convert to user units
@@ -5186,14 +5189,19 @@ EOT;
 
                 if (isset($current_font['C'][$char])) {
                     $char_width = $current_font['C'][$char];
+                } elseif (isset($current_font['C'][0xFFFD])) {
+                    // fffd => replacement character
+                    $char_width = $current_font['C'][0xFFFD];
+                } else {
+                    $char_width = $current_font['C'][0x0020];
+                }
 
-                    // add the character width
-                    $w += $char_width;
+                // add the character width
+                $w += $char_width;
 
-                    // add additional padding for space
-                    if (isset($current_font['codeToName'][$char]) && $current_font['codeToName'][$char] === 'space') {  // Space
-                        $w += $wordSpacing * $space_scale;
-                    }
+                // add additional padding for space
+                if (isset($current_font['codeToName'][$char]) && $current_font['codeToName'][$char] === 'space') {  // Space
+                    $w += $wordSpacing * $space_scale;
                 }
             }
 
@@ -5221,14 +5229,19 @@ EOT;
 
                 if (isset($current_font['C'][$char])) {
                     $char_width = $current_font['C'][$char];
+                } elseif (isset($current_font['C'][0xFFFD])) {
+                    // fffd => replacement character
+                    $char_width = $current_font['C'][0xFFFD];
+                } else {
+                    $char_width = $current_font['C'][0x0020];
+                }
 
-                    // add the character width
-                    $w += $char_width;
+                // add the character width
+                $w += $char_width;
 
-                    // add additional padding for space
-                    if (isset($current_font['codeToName'][$char]) && $current_font['codeToName'][$char] === 'space') {  // Space
-                        $w += $wordSpacing * $space_scale;
-                    }
+                // add additional padding for space
+                if (isset($current_font['codeToName'][$char]) && $current_font['codeToName'][$char] === 'space') {  // Space
+                    $w += $wordSpacing * $space_scale;
                 }
             }
 
@@ -5705,8 +5718,10 @@ EOT;
                 }
             }
 
-            $imagick = new \Imagick($file);
-            $imagick->setFormat('png');
+            $imagick = new \Imagick();
+            $imagick->setRegistry('temporary-path', $this->tmp);
+            $imagick->setFormat('PNG');
+            $imagick->readImage($file);
 
             // Get opacity channel (negative of alpha channel)
             if ($imagick->getImageAlphaChannel()) {
@@ -5716,7 +5731,14 @@ EOT;
                 if (\Imagick::getVersion()['versionNumber'] < 1800) {
                     $alpha_channel->negateImage(true);
                 }
-                $alpha_channel->writeImage($tempfile_alpha);
+
+                try {
+                    $alpha_channel->writeImage($tempfile_alpha);
+                } catch (\ImagickException $th) {
+                    // Backwards compatible retry attempt in case the IMagick policy is still configured in lowercase
+                    $alpha_channel->setFormat('png');
+                    $alpha_channel->writeImage($tempfile_alpha);
+                }
 
                 // Cast to 8bit+palette
                 $imgalpha_ = @imagecreatefrompng($tempfile_alpha);
@@ -5729,6 +5751,7 @@ EOT;
 
             // Make opaque image
             $color_channels = new \Imagick();
+            $color_channels->setRegistry('temporary-path', $this->tmp);
             $color_channels->newImage($wpx, $hpx, "#FFFFFF", "png");
             $color_channels->compositeImage($imagick, \Imagick::COMPOSITE_COPYRED, 0, 0);
             $color_channels->compositeImage($imagick, \Imagick::COMPOSITE_COPYGREEN, 0, 0);
@@ -5886,8 +5909,7 @@ EOT;
     }
 
     /**
-     * add a PNG image into the document, from a file
-     * this should work with remote files
+     * add an SVG image into the document from a file
      *
      * @param $file
      * @param $x
